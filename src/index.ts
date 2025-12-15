@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { serveStatic } from 'hono/cloudflare-workers';
 
 // Import routes
 import auth from './routes/auth';
@@ -20,9 +19,6 @@ const app = new Hono<{ Bindings: Bindings }>();
 
 // Enable CORS for all API routes
 app.use('/api/*', cors());
-
-// Serve static files from public directory
-app.use('/static/*', serveStatic({ root: './public' }));
 
 // API routes
 app.route('/api/auth', auth);
@@ -99,66 +95,6 @@ app.get('/api', (c) => {
       ]
     }
   });
-});
-
-// Default route - serve index.html
-app.get('/', (c) => {
-  return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZENIBO - 家計簿アプリ</title>
-    <style>
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        max-width: 800px;
-        margin: 50px auto;
-        padding: 20px;
-        line-height: 1.6;
-      }
-      h1 { color: #2563eb; }
-      .status { color: #16a34a; font-weight: bold; }
-      code {
-        background: #f1f5f9;
-        padding: 2px 6px;
-        border-radius: 3px;
-        font-size: 0.9em;
-      }
-      .section {
-        background: #f8fafc;
-        padding: 20px;
-        margin: 20px 0;
-        border-radius: 8px;
-      }
-    </style>
-</head>
-<body>
-    <h1>✅ ZENIBO API v2.0 is Running</h1>
-    <p class="status">Status: Operational</p>
-    
-    <div class="section">
-      <h2>📋 次のステップ</h2>
-      <ol>
-        <li>D1データベースを作成: <code>npx wrangler d1 create zenibo-production</code></li>
-        <li>wrangler.jsonc にdatabase_idを設定</li>
-        <li>マイグレーション実行: <code>npm run db:migrate:local</code></li>
-        <li>フロントエンドを追加して再デプロイ</li>
-      </ol>
-    </div>
-
-    <div class="section">
-      <h2>🔗 API エンドポイント</h2>
-      <p>API仕様: <a href="/api">/api</a></p>
-    </div>
-
-    <div class="section">
-      <h2>📝 Test Account</h2>
-      <p>Email: <code>da.sasaki.2929@gmail.com</code></p>
-      <p>Password: <code>test1234</code></p>
-    </div>
-</body>
-</html>`);
 });
 
 export default app;
