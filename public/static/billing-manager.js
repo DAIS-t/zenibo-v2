@@ -1,0 +1,1590 @@
+
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>ZENIBO（ゼニボ）- シンプル現金出納帳</title>
+        
+        <!-- PWA Meta Tags -->
+        <meta name="description" content="フリーランス・個人事業主のための、シンプルで使いやすい現金管理アプリ">
+        <meta name="theme-color" content="#5BA5E8">
+        <link rel="manifest" href="/manifest.json">
+        
+        <!-- iOS PWA Support -->
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="default">
+        <meta name="apple-mobile-web-app-title" content="ZENIBO">
+        <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+        
+        <!-- Favicon -->
+        <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+        <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png">
+        
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/style.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50 min-h-screen">
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 flex flex-col items-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-indigo-600 mb-3"></i>
+                <p class="text-gray-700">読み込み中...</p>
+            </div>
+        </div>
+
+        <!-- Auth Modal -->
+        <div id="auth-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl p-8 max-w-md w-full mx-4">
+                <div class="text-center mb-6">
+                    <img src="/static/logo-full.png" alt="ZENIBO" class="h-12 mx-auto mb-3">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-2">
+                        ZENIBO（ゼニボ）
+                    </h2>
+                    <p class="text-gray-600 text-sm">アカウントにログインまたは新規登録</p>
+                </div>
+
+                <!-- Login Form -->
+                <div id="login-form">
+                    <form id="login-form-element">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                            <input type="email" id="login-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">パスワード</label>
+                            <input type="password" id="login-password" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-lg hover:shadow-lg transition">
+                            <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                        </button>
+                    </form>
+                    <div class="text-center mt-4">
+                        <button id="show-register-btn" class="text-indigo-600 hover:text-indigo-700 text-sm">
+                            アカウントをお持ちでない方はこちら
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Register Form -->
+                <div id="register-form" class="hidden">
+                    <form id="register-form-element">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">お名前</label>
+                            <input type="text" id="register-name" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                            <input type="email" id="register-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">パスワード（6文字以上）</label>
+                            <input type="password" id="register-password" required minlength="6" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+                        <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-lg hover:shadow-lg transition">
+                            <i class="fas fa-user-plus mr-2"></i>新規登録
+                        </button>
+                    </form>
+                    <div class="text-center mt-4">
+                        <button id="show-login-btn" class="text-indigo-600 hover:text-indigo-700 text-sm">
+                            既にアカウントをお持ちの方はこちら
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="auth-error" class="hidden mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p class="text-red-600 text-sm"></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="zenibo-header no-print">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-3">
+                        <img src="/static/icon-192.png" alt="ZENIBO" class="h-10 w-10 rounded-lg">
+                        <h1 class="text-2xl font-bold">
+                            ZENIBO
+                        </h1>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <button id="header-quick-save-btn" class="hidden btn-gold" title="証憑をKEEP">
+                            <i class="fas fa-camera text-xl"></i>
+                        </button>
+                        <div id="pending-todo-badge" class="hidden zenibo-badge zenibo-badge-gold cursor-pointer px-4 py-2" onclick="app.switchTab('entry')" title="入力待ちの証憑を確認">
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm font-semibold">入力待ち</span>
+                                <span class="text-lg font-bold" id="pending-count">0</span>
+                            </div>
+                        </div>
+                        <button id="announcements-btn" onclick="showAnnouncementsModal()" class="relative btn-secondary bg-white text-white border-white hover:bg-opacity-20 text-sm">
+                            <i class="fas fa-bell text-xl"></i>
+                            <span id="unread-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                        </button>
+                        <div class="text-right">
+                            <div class="text-sm opacity-90">現在の出納帳</div>
+                            <div class="font-semibold" id="current-book-name">出納帳を選択</div>
+                        </div>
+                        <button id="switch-book-btn" class="btn-secondary bg-white text-white border-white hover:bg-opacity-20 text-sm">
+                            <i class="fas fa-exchange-alt mr-1"></i>切替
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="bg-white border-b no-print">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex space-x-1 overflow-x-auto">
+                    <button class="tab-btn tab-button active" data-tab="entry">
+                        <i class="fas fa-plus-circle mr-1"></i>入力
+                    </button>
+                    <button class="tab-btn tab-button" data-tab="list">
+                        <i class="fas fa-list mr-1"></i>一覧
+                    </button>
+                    <button class="tab-btn tab-button" data-tab="monthly">
+                        <i class="fas fa-calendar-check mr-1"></i>月次締め
+                    </button>
+                    <button class="tab-btn tab-button" data-tab="receipt">
+                        <i class="fas fa-file-pdf mr-1"></i>証憑ファイル
+                    </button>
+                    <button class="tab-btn tab-button" data-tab="accounts">
+                        <i class="fas fa-book mr-1"></i>勘定科目
+                    </button>
+                    <button class="tab-btn tab-button" data-tab="invoice">
+                        <i class="fas fa-credit-card mr-1"></i>請求管理
+                    </button>
+                    <button class="tab-btn tab-button" data-tab="members">
+                        <i class="fas fa-users mr-1"></i>メンバー管理
+                    </button>
+                    <button class="tab-btn tab-button" data-tab="settings">
+                        <i class="fas fa-cog mr-1"></i>設定
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 py-6">
+            <!-- Entry Tab -->
+            <div id="entry-tab" class="tab-content active">
+                <div class="zenibo-card max-w-2xl mx-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">取引入力</h2>
+                        <button type="button" id="quick-save-btn" class="hidden btn-gold">
+                            <i class="fas fa-camera mr-2"></i>KEEP
+                        </button>
+                    </div>
+
+                    <!-- Pending Receipts Section -->
+                    <div id="pending-receipts-section" class="hidden mb-6 bg-orange-50 border-2 border-orange-300 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-lg font-semibold text-orange-800">
+                                <i class="fas fa-clock mr-2"></i>入力待ちの証憑
+                            </h3>
+                            <span class="px-3 py-1 bg-orange-500 text-white rounded-full font-bold" id="pending-receipts-count">0</span>
+                        </div>
+                        <p class="text-sm text-orange-700 mb-3">
+                            <i class="fas fa-info-circle mr-1"></i>証憑画像のみ保存されています。取引詳細を入力してください。
+                        </p>
+                        <div id="pending-receipts-list" class="space-y-2">
+                            <!-- Pending receipts will be inserted here -->
+                        </div>
+                    </div>
+
+                    <form id="entry-form" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">日付 <span class="text-red-500">*</span></label>
+                            <input type="date" id="date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">区分 <span class="text-red-500">*</span></label>
+                            <select id="type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <option value="income">入金</option>
+                                <option value="expense">出金</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">取引内容 <span class="text-red-500">*</span></label>
+                            <input type="text" id="description" required placeholder="例：売上代金、事務用品購入" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">取引先 <span class="text-red-500">*</span></label>
+                            <input type="text" id="client" required placeholder="例：株式会社○○、個人事業主△△" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">金額（税込） <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="number" id="amount" required min="0" step="1" placeholder="0" class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <span class="absolute right-4 top-2 text-gray-500">円</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">勘定科目</label>
+                            <select id="account-subject" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <option value="">選択しない</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">補助科目</label>
+                            <select id="sub-account" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <option value="">選択しない</option>
+                                <!-- Options will be populated by JavaScript -->
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">消費税区分 <span class="text-red-500">*</span></label>
+                            <select id="tax-type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <option value="taxable-10">課税10%</option>
+                                <option value="taxable-8">軽減税率8%</option>
+                                <option value="non-taxable">非課税</option>
+                                <option value="tax-exempt">免税</option>
+                                <option value="out-of-scope">不課税</option>
+                            </select>
+                        </div>
+
+                        <!-- Receipt Attachment (PRO Plan Only) -->
+                        <div id="receipt-upload-section" class="hidden">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                証憑添付
+                                <span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded ml-2">PRO限定</span>
+                            </label>
+                            <p class="text-xs text-gray-500 mb-2">
+                                <i class="fas fa-info-circle mr-1"></i>撮影または画像をアップロードすると、自動的にPDF化して保存されます
+                            </p>
+                            <input type="file" id="receipt-image" accept="image/*" capture="environment" class="hidden">
+                            <button type="button" onclick="document.getElementById('receipt-image').click()" class="w-full px-4 py-3 bg-indigo-100 border-2 border-indigo-300 text-indigo-700 rounded-lg hover:bg-indigo-200 transition font-medium">
+                                <i class="fas fa-camera mr-2"></i>証憑を撮影 / アップロード
+                            </button>
+                            <div id="receipt-preview" class="hidden mt-3 p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <i class="fas fa-check-circle text-green-600"></i>
+                                        <span class="text-sm text-green-800">証憑が添付されました</span>
+                                    </div>
+                                    <button type="button" onclick="app.removeReceiptImage()" class="text-red-500 hover:text-red-700 text-sm">
+                                        <i class="fas fa-times-circle mr-1"></i>削除
+                                    </button>
+                                </div>
+                                <img id="receipt-preview-img" src="" alt="証憑画像" class="mt-2 max-w-full h-32 mx-auto rounded border">
+                                <button type="button" id="inline-quick-save-btn" class="hidden mt-3 w-full px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition font-bold">
+                                    <i class="fas fa-bookmark mr-2"></i>KEEP（後で詳細入力）
+                                </button>
+                                <p class="text-xs text-gray-600 mt-2 text-center">
+                                    <i class="fas fa-info-circle mr-1"></i>登録すると自動的にPDF化されます
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="pt-4">
+                            <button type="submit" class="w-full btn-primary text-white font-bold py-3 rounded-lg hover:shadow-lg transition">
+                                <i class="fas fa-save mr-2"></i>登録する
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- List Tab -->
+            <div id="list-tab" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <h2 class="text-xl font-bold text-gray-800 mb-4">取引一覧</h2>
+                    
+                    <!-- Filter Section (E-Tax Law Compliant Search) -->
+                    <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6 no-print">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-calendar mr-1"></i>開始日
+                                </label>
+                                <input type="date" id="filter-start-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-calendar mr-1"></i>終了日
+                                </label>
+                                <input type="date" id="filter-end-date" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-search mr-1"></i>取引内容・取引先
+                                </label>
+                                <input type="text" id="filter-keyword" placeholder="キーワード検索" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-yen-sign mr-1"></i>金額（最小）
+                                </label>
+                                <input type="number" id="filter-min-amount" placeholder="0" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-yen-sign mr-1"></i>金額（最大）
+                                </label>
+                                <input type="number" id="filter-max-amount" placeholder="999999999" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">
+                                    <i class="fas fa-folder mr-1"></i>勘定科目
+                                </label>
+                                <select id="filter-account-subject" class="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <option value="">すべて</option>
+                                </select>
+                            </div>
+                            <div class="flex gap-2">
+                                <button id="apply-filter-btn" class="flex-1 px-4 py-2 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 text-sm font-medium">
+                                    <i class="fas fa-filter mr-1"></i>絞込
+                                </button>
+                                <button id="clear-filter-btn" class="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 text-sm">
+                                    <i class="fas fa-times mr-1"></i>クリア
+                                </button>
+                                <button id="print-btn" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 text-sm">
+                                    <i class="fas fa-print mr-1"></i>印刷
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mt-3 flex items-center justify-between">
+                            <span id="filter-status" class="text-sm text-gray-600">全期間の取引を表示中</span>
+                            <span class="text-xs text-gray-500">
+                                <i class="fas fa-shield-alt mr-1"></i>電子帳簿保存法対応検索
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-50 border-b-2 border-gray-200">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">日付</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">取引内容</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">取引先</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">勘定科目</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-700">補助科目</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-gray-700">入金</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-gray-700">出金</th>
+                                    <th class="px-4 py-3 text-right font-semibold text-gray-700">残高</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-700">消費税</th>
+                                    <th class="px-4 py-3 text-center font-semibold text-gray-700 no-print">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="transaction-list" class="divide-y divide-gray-200">
+                                <!-- Transactions will be inserted here -->
+                            </tbody>
+                            <tfoot class="bg-gray-50 border-t-2 border-gray-300 font-bold">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-3 text-right">合計</td>
+                                    <td class="px-4 py-3 text-right text-blue-600" id="total-income">¥0</td>
+                                    <td class="px-4 py-3 text-right text-red-600" id="total-expense">¥0</td>
+                                    <td class="px-4 py-3 text-right text-green-600" id="final-balance">¥0</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+
+                    <div id="empty-state" class="text-center py-12 text-gray-400">
+                        <i class="fas fa-inbox text-6xl mb-4"></i>
+                        <p>取引データがありません</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Monthly Closing Tab -->
+            <div id="monthly-tab" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">月次締め処理</h2>
+                    
+                    <div class="space-y-4">
+                        <!-- Month Range Selection -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">開始年月</label>
+                                <input type="month" id="closing-start-month" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">終了年月</label>
+                                <input type="month" id="closing-end-month" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                        </div>
+
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h3 class="font-semibold text-blue-900 mb-2">
+                                <i class="fas fa-info-circle mr-1"></i>月次締めについて
+                            </h3>
+                            <ul class="text-sm text-blue-800 space-y-1">
+                                <li>• 開始年月と終了年月を指定して複数月の取引データを処理できます</li>
+                                <li>• CSV形式でダウンロード、または設定した会計事務所へメール送信できます</li>
+                                <li>• 取引データは削除されません（再ダウンロード・再送信可能）</li>
+                                <li>• メール送信にはプロトタイプでは実際に送信されません（送信完了画面のみ）</li>
+                            </ul>
+                        </div>
+
+                        <div id="closing-summary" class="hidden bg-gray-50 rounded-lg p-4 space-y-2">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">対象期間</span>
+                                <span class="font-semibold" id="summary-period">-</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">取引件数</span>
+                                <span class="font-semibold" id="summary-count">0件</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">入金合計</span>
+                                <span class="font-semibold text-blue-600" id="summary-income">¥0</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">出金合計</span>
+                                <span class="font-semibold text-red-600" id="summary-expense">¥0</span>
+                            </div>
+                            <div class="flex justify-between pt-2 border-t">
+                                <span class="font-bold text-gray-800">差引残高</span>
+                                <span class="font-bold text-green-600" id="summary-balance">¥0</span>
+                            </div>
+                        </div>
+
+                        <button id="preview-btn" class="w-full bg-blue-500 text-white font-bold py-3 rounded-lg hover:bg-blue-600 transition">
+                            <i class="fas fa-eye mr-2"></i>プレビュー
+                        </button>
+
+                        <button id="export-csv-btn" class="w-full bg-green-500 text-white font-bold py-3 rounded-lg hover:bg-green-600 transition" disabled>
+                            <i class="fas fa-file-csv mr-2"></i>CSV形式でダウンロード
+                        </button>
+
+                        <div id="email-send-section" class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">送付先を選択</label>
+                                <select id="recipient-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                    <option value="">送付先を選択してください</option>
+                                </select>
+                                <p class="text-xs text-gray-500 mt-1">※送付先は設定タブで登録できます</p>
+                            </div>
+                            <button id="send-email-btn" class="w-full bg-purple-500 text-white font-bold py-3 rounded-lg hover:bg-purple-600 transition" disabled>
+                                <i class="fas fa-envelope mr-2"></i>月次締め送信
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscription Management Tab -->
+            <div id="invoice-tab" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-credit-card mr-2"></i>請求管理
+                    </h2>
+                    
+                    <!-- 料金プラン情報 -->
+                    <div class="mb-8 bg-gradient-to-br from-indigo-50 to-purple-50 border border-indigo-200 rounded-lg p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">
+                                <i class="fas fa-crown mr-2 text-yellow-500"></i>現在のプラン
+                            </h3>
+                            <button id="change-plan-btn" class="text-sm bg-white px-4 py-2 rounded-lg hover:bg-gray-50 transition border border-gray-300">
+                                <i class="fas fa-exchange-alt mr-1"></i>プランを変更
+                            </button>
+                        </div>
+                        
+                        <div id="current-plan-display" class="space-y-3">
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">プラン:</span>
+                                <span id="plan-name" class="font-bold text-xl text-indigo-600">Free Plan</span>
+                            </div>
+                            <div class="flex items-center justify-between">
+                                <span class="text-gray-600">月額料金:</span>
+                                <span id="plan-price" class="font-bold text-2xl text-gray-800">¥0</span>
+                            </div>
+                            <div class="grid grid-cols-2 gap-4 mt-4 pt-4 border-t border-indigo-200">
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">ユーザー数</div>
+                                    <div class="font-bold text-lg" id="plan-users">1名</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">帳簿数</div>
+                                    <div class="font-bold text-lg" id="plan-books">1冊</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">月間取引数</div>
+                                    <div class="font-bold text-lg" id="plan-transactions">30件</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-sm text-gray-600 mb-1">画像添付</div>
+                                    <div class="font-bold text-lg" id="plan-images">不可</div>
+                                </div>
+                            </div>
+                            <div id="metered-billing-display" class="hidden mt-4 pt-4 border-t border-indigo-200">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">追加帳簿料金:</span>
+                                    <span id="additional-charge" class="font-bold text-lg text-purple-600">+¥0</span>
+                                </div>
+                                <div class="flex items-center justify-between mt-2">
+                                    <span class="text-sm text-gray-600">合計月額:</span>
+                                    <span id="total-price" class="font-bold text-2xl text-gray-800">¥990</span>
+                                </div>
+                            </div>
+                            <div id="subscription-info" class="text-sm text-gray-600 mt-4 pt-4 border-t border-indigo-200 hidden">
+                                <p>次回請求日: <span id="next-billing-date" class="font-semibold"></span></p>
+                                <p>登録クレジットカード: <span id="card-info" class="font-semibold"></span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Payment History -->
+                    <div id="payment-history-section" class="hidden">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-history mr-2"></i>支払履歴
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50 border-b">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-semibold text-gray-700">日付</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-gray-700">プラン</th>
+                                        <th class="px-4 py-3 text-right font-semibold text-gray-700">金額</th>
+                                        <th class="px-4 py-3 text-center font-semibold text-gray-700">ステータス</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="payment-history-list">
+                                    <!-- Payment history will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Coupon Registration Section -->
+                    <div class="mt-8">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-ticket-alt mr-2 text-yellow-600"></i>クーポン登録
+                        </h3>
+                        <p class="text-sm text-gray-600 mb-4">
+                            運営やキャンペーンで配布されたクーポンコードを登録できます。<br>
+                            登録したクーポンは、プラン変更時に適用できます。
+                        </p>
+                        <form id="register-coupon-form" class="flex gap-3 mb-6">
+                            <input type="text" id="coupon-code-input" 
+                                   placeholder="クーポンコードを入力" 
+                                   class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 uppercase"
+                                   maxlength="50"
+                                   required>
+                            <button type="submit" class="btn-primary px-6 py-2 rounded-lg whitespace-nowrap">
+                                <i class="fas fa-plus mr-2"></i>登録
+                            </button>
+                        </form>
+                        <p class="text-xs text-gray-500 mb-4">
+                            ※ クーポンコードは大文字・小文字を区別します
+                        </p>
+
+                        <!-- Registered Coupons List -->
+                        <div id="registered-coupons-container" class="mt-4">
+                            <!-- Populated by JavaScript -->
+                            <div class="text-center text-gray-500 py-8 border border-gray-200 rounded-lg">
+                                <i class="fas fa-inbox text-4xl mb-2"></i>
+                                <p>登録済みのクーポンはありません</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Cancel Subscription -->
+                    <div id="cancel-subscription-section" class="hidden mt-8 pt-8 border-t">
+                        <button onclick="app.cancelSubscription()" class="text-red-500 hover:text-red-700 text-sm">
+                            <i class="fas fa-times-circle mr-1"></i>サブスクリプションを解約する
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Receipt Files Tab -->
+            <div id="receipt-tab" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6">
+                    <!-- E-Tax Law Compliance Badge -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-shield-check text-green-600 text-2xl mt-1"></i>
+                            <div class="flex-1">
+                                <h3 class="text-sm font-bold text-green-800 mb-2">
+                                    電子帳簿保存法対応
+                                </h3>
+                                <ul class="text-xs text-green-700 space-y-1">
+                                    <li><i class="fas fa-check-circle mr-1"></i>証憑画像の解像度チェック（200万画素以上 / 200dpi以上）</li>
+                                    <li><i class="fas fa-check-circle mr-1"></i>タイムスタンプによる改ざん防止</li>
+                                    <li><i class="fas fa-check-circle mr-1"></i>7年間の保存期間管理</li>
+                                    <li><i class="fas fa-check-circle mr-1"></i>日付・金額・取引先による検索機能</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-file-pdf mr-2"></i>証憑ファイル
+                        </h2>
+                        <div class="flex items-center gap-2">
+                            <span class="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs rounded font-semibold">Basic/Professional限定</span>
+                            <span id="receipt-count" class="text-sm text-gray-600">0件</span>
+                        </div>
+                    </div>
+
+                    <div id="receipt-files-available">
+                        <!-- Filter and Bulk Action Section -->
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">開始日</label>
+                                    <input type="date" id="receipt-filter-start" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">終了日</label>
+                                    <input type="date" id="receipt-filter-end" class="w-full px-3 py-2 border border-gray-300 rounded text-sm">
+                                </div>
+                                <div class="flex items-end gap-2">
+                                    <button onclick="app.filterReceipts()" class="flex-1 px-4 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600 text-sm">
+                                        <i class="fas fa-filter mr-1"></i>絞込
+                                    </button>
+                                    <button onclick="app.clearReceiptFilter()" class="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 text-sm">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Bulk Download Section -->
+                            <div class="flex items-center justify-between pt-4 border-t border-gray-300">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm text-gray-600">選択中:</span>
+                                    <span id="selected-count" class="text-sm font-semibold text-indigo-600">0件</span>
+                                </div>
+                                <button id="bulk-download-btn" onclick="app.bulkDownloadReceipts()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 text-sm font-medium" disabled>
+                                    <i class="fas fa-download mr-1"></i>選択したファイルを一括ダウンロード
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Receipt Files List -->
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead class="bg-gray-50 border-b-2 border-gray-200">
+                                    <tr>
+                                        <th class="px-4 py-3 text-center font-semibold text-gray-700" style="width: 40px;">
+                                            <input type="checkbox" id="select-all-receipts" onclick="app.toggleSelectAllReceipts()" class="w-4 h-4 cursor-pointer">
+                                        </th>
+                                        <th class="px-4 py-3 text-left font-semibold text-gray-700">ファイル名</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-gray-700">日付</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-gray-700">取引先</th>
+                                        <th class="px-4 py-3 text-right font-semibold text-gray-700">金額</th>
+                                        <th class="px-4 py-3 text-center font-semibold text-gray-700">
+                                            <i class="fas fa-shield-check mr-1"></i>電帳法
+                                        </th>
+                                        <th class="px-4 py-3 text-center font-semibold text-gray-700">操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="receipt-files-list" class="divide-y divide-gray-200">
+                                    <!-- Receipt files will be inserted here -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div id="empty-receipt-state" class="text-center py-12 text-gray-400">
+                            <i class="fas fa-file-pdf text-6xl mb-4"></i>
+                            <p>証憑ファイルがありません</p>
+                            <p class="text-sm mt-2">取引入力時に証憑を添付すると、PDFファイルとして保存されます</p>
+                        </div>
+                    </div>
+
+                    <div id="receipt-files-unavailable" class="hidden text-center py-12">
+                        <i class="fas fa-lock text-6xl mb-4 text-gray-300"></i>
+                        <p class="text-gray-600 mb-4">この機能はBasic/Professionalプラン限定です</p>
+                        <p class="text-sm text-gray-500 mb-6">画像添付機能を利用するには、Basic（¥330/月）またはProfessional（¥990/月〜）プランへアップグレードしてください。</p>
+                        <button onclick="app.switchTab('invoice')" class="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 font-semibold">
+                            プラン変更画面へ
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Accounts Tab -->
+            <div id="accounts-tab" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">
+                        <i class="fas fa-book mr-2"></i>勘定科目管理
+                    </h2>
+
+                    <!-- Add New Account Section -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">勘定科目を追加</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="md:col-span-2">
+                                <input type="text" id="new-account-subject-name" placeholder="勘定科目名（例：売上高）" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <button onclick="app.addAccountSubject()" class="w-full bg-indigo-500 text-white font-bold py-2 rounded-lg hover:bg-indigo-600">
+                                    <i class="fas fa-plus mr-2"></i>追加
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add New Sub-Account Section -->
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-6 mb-6">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">補助科目を追加</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <select id="parent-account-select" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                    <option value="">勘定科目を選択</option>
+                                </select>
+                            </div>
+                            <div class="md:col-span-2">
+                                <input type="text" id="new-sub-account-name" placeholder="補助科目名（例：講演料）" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <button onclick="app.addSubAccount()" class="w-full bg-green-500 text-white font-bold py-2 rounded-lg hover:bg-green-600">
+                                    <i class="fas fa-plus mr-2"></i>追加
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Accounts List -->
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">登録済み勘定科目</h3>
+                        <div id="accounts-list" class="space-y-4">
+                            <!-- Accounts will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Tab -->
+            <!-- メンバー管理タブ -->
+            <div id="members-tab" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-4xl mx-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold text-gray-800">
+                            <i class="fas fa-users mr-2 text-indigo-600"></i>メンバー管理
+                        </h2>
+                        <button id="add-member-btn" class="btn-primary text-white px-4 py-2 rounded-lg hover:shadow-lg transition text-sm">
+                            <i class="fas fa-user-plus mr-2"></i>メンバーを追加
+                        </button>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                            <div class="text-sm text-blue-800">
+                                <p class="font-semibold mb-1">メンバー管理について</p>
+                                <p>1つのアカウントで最大4名（メイン1名+サブ3名）まで利用できます。</p>
+                                <p class="mt-1">メインユーザーが料金支払いを担当しますが、権限は全メンバー同じです。</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- メンバー一覧 -->
+                    <div id="members-list" class="space-y-3">
+                        <!-- メンバーカードがここに動的に追加されます -->
+                    </div>
+
+                    <!-- 空の状態 -->
+                    <div id="members-empty" class="hidden text-center py-12">
+                        <i class="fas fa-users text-gray-300 text-6xl mb-4"></i>
+                        <p class="text-gray-500">まだメンバーが登録されていません</p>
+                        <button onclick="document.getElementById('add-member-btn').click()" class="mt-4 text-indigo-600 hover:text-indigo-700">
+                            メンバーを追加する
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="settings-tab" class="tab-content">
+                <div class="bg-white rounded-lg shadow-md p-6 max-w-2xl mx-auto">
+                    <h2 class="text-xl font-bold text-gray-800 mb-6">設定</h2>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                                <div class="flex justify-between items-center">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">送付先メールアドレス管理</label>
+                                        <p class="text-xs text-gray-500">
+                                            <i class="fas fa-info-circle mr-1"></i>
+                                            連絡先を登録し、各出納帳の送信先を設定できます
+                                        </p>
+                                    </div>
+                                    <button type="button" onclick="openRecipientsModal()" class="px-4 py-2 bg-indigo-600 text-white text-sm rounded-lg hover:bg-indigo-700 transition">
+                                        <i class="fas fa-address-book mr-2"></i>連絡先を管理
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">事業者名</label>
+                            <input type="text" id="business-name" placeholder="個人事業主 山田太郎" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">管理口</label>
+                            <input type="text" id="account-name" placeholder="例：現金、小口現金、事業用口座" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            <p class="text-xs text-gray-500 mt-1">この出納帳で管理する口座の名前</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                エクスポート形式
+                                <span id="export-format-plan-badge" class="ml-2 text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">スモール以上</span>
+                            </label>
+                            <div id="export-format-section" class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                <button type="button" data-format="mf" class="export-format-btn px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition text-center">
+                                    <div class="font-semibold text-gray-800">MFクラウド会計</div>
+                                    <div class="text-xs text-gray-500 mt-1">Money Forward</div>
+                                </button>
+                                <button type="button" data-format="freee" class="export-format-btn px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition text-center">
+                                    <div class="font-semibold text-gray-800">freee会計</div>
+                                    <div class="text-xs text-gray-500 mt-1">freee</div>
+                                </button>
+                                <button type="button" data-format="yayoi" class="export-format-btn px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition text-center">
+                                    <div class="font-semibold text-gray-800">弥生会計</div>
+                                    <div class="text-xs text-gray-500 mt-1">Yayoi</div>
+                                </button>
+                            </div>
+                            <div id="export-format-unavailable" class="hidden bg-gray-50 border border-gray-300 rounded-lg p-4 text-center mt-3">
+                                <i class="fas fa-lock text-gray-400 text-2xl mb-2"></i>
+                                <p class="text-gray-600 text-sm mb-2">会計ソフト連携はスモールプラン以上で利用可能です</p>
+                                <p class="text-gray-500 text-xs">無料プランでは基本形式のCSVエクスポートのみ利用できます</p>
+                            </div>
+                            <p id="export-format-info" class="text-xs text-gray-500 mt-2">選択した形式でCSVエクスポートされます（現在の選択: <span id="current-format-label" class="font-semibold">MFクラウド会計</span>）</p>
+                            <p id="export-basic-info" class="hidden text-xs text-gray-500 mt-2">基本形式でCSVエクスポートされます（日付、区分、取引内容、取引先、勘定科目、補助科目、入金、出金、残高、消費税区分）</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">期首残高</label>
+                            <div class="relative">
+                                <input type="number" id="opening-balance" value="0" step="1" class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                <span class="absolute right-4 top-2 text-gray-500">円</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">年度開始時の現金残高</p>
+                        </div>
+
+                        <button id="save-settings-btn" class="w-full btn-primary text-white font-bold py-3 rounded-lg hover:shadow-lg transition">
+                            <i class="fas fa-save mr-2"></i>設定を保存
+                        </button>
+
+                        <div class="pt-6 border-t">
+                            <h3 class="font-semibold text-gray-800 mb-3">データ管理</h3>
+                            <div class="space-y-2">
+                                <button id="export-all-btn" class="w-full bg-blue-500 text-white font-medium py-2 rounded-lg hover:bg-blue-600 transition text-sm">
+                                    <i class="fas fa-download mr-2"></i>全データをエクスポート（JSON）
+                                </button>
+                                <button id="clear-data-btn" class="w-full bg-red-500 text-white font-medium py-2 rounded-lg hover:bg-red-600 transition text-sm">
+                                    <i class="fas fa-trash mr-2"></i>全データを削除
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+
+        <!-- Recipient Add/Edit Modal -->
+        <div id="recipient-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 id="recipient-modal-title" class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-user-plus mr-2 text-indigo-500"></i>連絡先を追加
+                        </h2>
+                        <button onclick="window.recipientManager.closeModal()" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <form id="recipient-form" class="space-y-4">
+                        <input type="hidden" id="recipient-id">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">名前 *</label>
+                            <input type="text" id="recipient-name" required placeholder="例：税理士 山田先生" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">メールアドレス *</label>
+                            <input type="email" id="recipient-email" required placeholder="例：accountant@example.com" 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-3">送信する出納帳を選択</label>
+                            <div id="recipient-books-checkboxes" class="space-y-2 border border-gray-200 rounded-lg p-4 max-h-60 overflow-y-auto">
+                                <!-- Checkboxes will be loaded dynamically -->
+                                <div class="text-center text-gray-500 py-4">
+                                    <i class="fas fa-book text-2xl mb-2"></i>
+                                    <p class="text-sm">出納帳を読み込み中...</p>
+                                </div>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                チェックした出納帳の月次締めファイルがこの連絡先に送信されます
+                            </p>
+                        </div>
+
+                        <div class="flex justify-end space-x-3 pt-4">
+                            <button type="button" onclick="window.recipientManager.closeModal()" 
+                                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                                キャンセル
+                            </button>
+                            <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                                <i class="fas fa-save mr-2"></i>保存
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recipients Management Modal -->
+        <div id="recipients-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-address-book mr-2 text-indigo-600"></i>
+                            連絡先管理
+                        </h2>
+                        <button onclick="closeRecipientsModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <p class="text-gray-600">
+                                連絡先を登録し、各出納帳の送付先を設定できます。チェックボックスで送信する出納帳を選択してください。
+                            </p>
+                          <!-- 
+  <button onclick="addNewRecipient()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                                <i class="fas fa-plus mr-2"></i>新規連絡先を追加
+                            </button>
+                             -->
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">連絡先</th>
+                                    <th class="px-4 py-3 text-left text-sm font-semibold text-gray-700">送信する出納帳</th>
+                                    <th class="px-4 py-3 text-right text-sm font-semibold text-gray-700">操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recipients-table-body">
+                                <!-- JavaScript で動的に生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- ✅ 新規追加: 新規連絡先追加フォーム -->
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-800 mb-4">
+                            <i class="fas fa-plus-circle mr-2 text-indigo-600"></i>
+                            新規連絡先を追加
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">名前 <span class="text-red-500">*</span></label>
+                                <input type="text" 
+                                       id="new-recipient-name" 
+                                       placeholder="例: 佐々木太郎" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">メールアドレス <span class="text-red-500">*</span></label>
+                                <input type="email" 
+                                       id="new-recipient-email" 
+                                       placeholder="例: example@example.com" 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">送信する出納帳を選択</label>
+                            <div id="new-recipient-books-list" class="grid grid-cols-2 md:grid-cols-3 gap-2 p-3 bg-white border border-gray-200 rounded-lg max-h-40 overflow-y-auto">
+                                <!-- JavaScript で動的に生成 -->
+                            </div>
+                        </div>
+                        <div class="mt-4 flex justify-end">
+                            <button onclick="addNewRecipient()" 
+                                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition">
+                                <i class="fas fa-check mr-2"></i>連絡先を追加
+                            </button>
+                        </div>
+                    </div>
+                    <!-- ✅ 追加ここまで -->
+
+
+                    <div class="mt-6 flex justify-end">
+                        <button onclick="closeRecipientsModal()" class="px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                            閉じる
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Plan Change Modal -->
+        <div id="plan-change-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-crown mr-2 text-yellow-500"></i>料金プラン
+                        </h2>
+                        <button id="close-plan-change-modal-btn" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <!-- Free Plan -->
+                        <div class="border-2 border-gray-300 rounded-lg p-6 hover:border-indigo-500 transition" data-plan="free">
+                            <div class="text-center mb-4">
+                                <h3 class="text-xl font-bold text-gray-800 mb-2">Free Plan</h3>
+                                <div class="text-4xl font-bold text-gray-800 mb-1">¥0</div>
+                                <div class="text-sm text-gray-500">/ 月</div>
+                            </div>
+                            <ul class="space-y-3 mb-6">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">1ユーザー</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">1帳簿まで</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">月間30取引まで</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-times text-red-500 mr-2 mt-1"></i>
+                                    <span class="text-sm text-gray-400">画像添付不可</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">基本CSVエクスポート</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-info-circle text-blue-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">広告あり</span>
+                                </li>
+                            </ul>
+                            <button class="w-full bg-gray-500 text-white py-2 rounded-lg hover:bg-gray-600 transition select-plan-btn" data-plan="free">
+                                現在のプラン
+                            </button>
+                        </div>
+
+                        <!-- Basic Plan -->
+                        <div class="border-2 border-indigo-500 rounded-lg p-6 relative bg-indigo-50" data-plan="basic">
+                            <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-indigo-500 text-white px-4 py-1 rounded-full text-xs font-bold">
+                                おすすめ
+                            </div>
+                            <div class="text-center mb-4">
+                                <h3 class="text-xl font-bold text-indigo-600 mb-2">Basic Plan</h3>
+                                <div class="text-4xl font-bold text-indigo-600 mb-1">¥330</div>
+                                <div class="text-sm text-gray-500">/ 月</div>
+                            </div>
+                            <ul class="space-y-3 mb-6">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">最大2ユーザー</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">3帳簿まで</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">取引数無制限</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">画像添付可能</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">会計ソフト連携</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">広告なし</span>
+                                </li>
+                            </ul>
+                            <button class="w-full bg-indigo-600 text-white py-2 rounded-lg hover:bg-indigo-700 transition select-plan-btn" data-plan="basic">
+                                このプランを選択
+                            </button>
+                        </div>
+
+                        <!-- Professional Plan -->
+                        <div class="border-2 border-purple-500 rounded-lg p-6 bg-purple-50" data-plan="professional">
+                            <div class="text-center mb-4">
+                                <h3 class="text-xl font-bold text-purple-600 mb-2">Professional Plan</h3>
+                                <div class="text-4xl font-bold text-purple-600 mb-1">¥990</div>
+                                <div class="text-sm text-gray-500">/ 月〜</div>
+                            </div>
+                            <ul class="space-y-3 mb-6">
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">最大4ユーザー</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">基本10帳簿</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-star text-yellow-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">11冊目〜: 5冊毎に+¥550</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">取引数無制限</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">画像添付可能</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">会計ソフト連携</span>
+                                </li>
+                                <li class="flex items-start">
+                                    <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                    <span class="text-sm">優先サポート</span>
+                                </li>
+                            </ul>
+                            <button class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition select-plan-btn" data-plan="professional">
+                                このプランを選択
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- クーポンコード入力欄 -->
+                    <div class="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                        <h3 class="font-bold text-gray-800 mb-4">
+                            <i class="fas fa-ticket-alt mr-2 text-yellow-600"></i>クーポンコード
+                        </h3>
+                        <div class="flex gap-3">
+                            <div class="flex-1">
+                                <input 
+                                    type="text" 
+                                    id="plan-change-coupon-input" 
+                                    placeholder="クーポンコードを入力" 
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-yellow-500 focus:border-yellow-500 uppercase"
+                                    maxlength="50"
+                                />
+                                <p class="text-xs text-gray-500 mt-1">例: WELCOME2025, FRIEND50, EARLYBIRD</p>
+                            </div>
+                            <button 
+                                id="apply-coupon-btn" 
+                                class="px-6 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition font-semibold whitespace-nowrap">
+                                適用
+                            </button>
+                        </div>
+                        <!-- クーポン適用結果表示 -->
+                        <div id="coupon-result" class="hidden mt-4"></div>
+                    </div>
+
+                    <!-- 従量課金シミュレーター（Professionalプラン用） -->
+                    <div id="metered-billing-calculator" class="hidden bg-purple-50 border border-purple-200 rounded-lg p-6">
+                        <h3 class="font-bold text-gray-800 mb-4">
+                            <i class="fas fa-calculator mr-2"></i>従量課金シミュレーター
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    必要な帳簿数を入力
+                                </label>
+                                <input type="number" id="books-count-input" value="10" min="1" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                                <p class="text-xs text-gray-500 mt-1">基本10冊、11冊目から5冊ごとに¥550追加</p>
+                            </div>
+                            <div class="bg-white rounded-lg p-4">
+                                <div class="text-sm text-gray-600 mb-2">料金計算</div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span>基本料金:</span>
+                                        <span class="font-semibold">¥990</span>
+                                    </div>
+                                    <div class="flex justify-between text-sm">
+                                        <span>追加帳簿料金:</span>
+                                        <span class="font-semibold" id="additional-charge-calc">¥0</span>
+                                    </div>
+                                    <div class="flex justify-between pt-2 border-t">
+                                        <span class="font-bold">合計月額:</span>
+                                        <span class="font-bold text-xl text-purple-600" id="total-price-calc">¥990</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <p class="text-sm text-gray-600">
+                                例: 13冊 = ¥1,540、20冊 = ¥2,090
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-500 mt-1 mr-3"></i>
+                            <div class="text-sm text-blue-800">
+                                <p class="font-semibold mb-1">プラン変更について</p>
+                                <p>プラン変更は即座に反映されます。料金は翌月分から適用されます。</p>
+                                <p class="mt-1">※ 現在はプロトタイプのため、実際の決済機能は未実装です。</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Payment Modal -->
+        <div id="payment-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-md w-full">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-credit-card mr-2"></i>サブスクリプション登録
+                        </h2>
+                        <button id="close-payment-modal-btn" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <div class="mb-6">
+                        <div class="bg-gradient-to-r from-indigo-50 to-purple-50 rounded-lg p-4 mb-4">
+                            <div class="flex justify-between mb-2">
+                                <span class="text-gray-600">選択プラン</span>
+                                <span class="font-semibold" id="payment-plan-name"></span>
+                            </div>
+                            <div class="flex justify-between pt-2 border-t">
+                                <span class="text-lg font-bold text-gray-800">月額料金</span>
+                                <span class="text-lg font-bold text-purple-600" id="payment-plan-price"></span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-2">毎月自動で更新されます</p>
+                        </div>
+
+                        <form id="payment-form" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">カード番号 <span class="text-red-500">*</span></label>
+                                <input type="text" id="card-number" required placeholder="1234 5678 9012 3456" maxlength="19" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">有効期限 <span class="text-red-500">*</span></label>
+                                    <input type="text" id="card-expiry" required placeholder="MM/YY" maxlength="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">CVV <span class="text-red-500">*</span></label>
+                                    <input type="text" id="card-cvv" required placeholder="123" maxlength="4" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">カード名義 <span class="text-red-500">*</span></label>
+                                <input type="text" id="card-name" required placeholder="TARO YAMADA" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            
+                            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                                <i class="fas fa-exclamation-triangle mr-1"></i>
+                                プロトタイプ版のため、実際の決済は行われません。入力された情報は保存されません。
+                            </div>
+
+                            <button type="submit" class="w-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white font-bold py-3 rounded-lg hover:from-indigo-600 hover:to-purple-600 transition">
+                                <i class="fas fa-lock mr-2"></i>サブスクリプションを開始（デモ）
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Book Switcher Modal -->
+        <div id="book-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-books mr-2"></i>出納帳管理
+                        </h2>
+                        <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <!-- New Book Form -->
+                    <div class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 mb-6">
+                        <h3 class="font-semibold text-indigo-900 mb-3">
+                            <i class="fas fa-plus-circle mr-1"></i>新しい出納帳を作成
+                        </h3>
+                        <form id="new-book-form" class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">事業者名 <span class="text-red-500">*</span></label>
+                                <input type="text" id="new-business-name" required placeholder="例：山田太郎" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">管理口 <span class="text-red-500">*</span></label>
+                                <input type="text" id="new-account-name" required placeholder="例：現金、小口現金、事業用口座" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-500 text-white font-bold py-2 rounded-lg hover:bg-indigo-600 transition">
+                                <i class="fas fa-plus mr-2"></i>作成
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Book List -->
+                    <div>
+                        <h3 class="font-semibold text-gray-800 mb-3">
+                            <i class="fas fa-list mr-1"></i>出納帳一覧
+                        </h3>
+                        <div id="book-list" class="space-y-2">
+                            <!-- Book items will be inserted here -->
+                        </div>
+                        <div id="empty-book-state" class="text-center py-8 text-gray-400">
+                            <i class="fas fa-inbox text-5xl mb-3"></i>
+                            <p>出納帳がありません</p>
+                            <p class="text-sm">上のフォームから新しい出納帳を作成してください</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Edit Transaction Modal -->
+        <div id="edit-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            <i class="fas fa-edit mr-2"></i>取引を編集
+                        </h2>
+                        <button id="close-edit-modal-btn" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times text-2xl"></i>
+                        </button>
+                    </div>
+
+                    <form id="edit-form" class="space-y-4">
+                        <input type="hidden" id="edit-transaction-id">
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">日付 <span class="text-red-500">*</span></label>
+                            <input type="date" id="edit-date" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">区分 <span class="text-red-500">*</span></label>
+                            <select id="edit-type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="income">入金</option>
+                                <option value="expense">出金</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">取引内容 <span class="text-red-500">*</span></label>
+                            <input type="text" id="edit-description" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">取引先 <span class="text-red-500">*</span></label>
+                            <input type="text" id="edit-client" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">金額（税込） <span class="text-red-500">*</span></label>
+                            <div class="relative">
+                                <input type="number" id="edit-amount" required min="1" step="1" class="w-full px-4 py-2 pr-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <span class="absolute right-4 top-2 text-gray-500">円</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">勘定科目</label>
+                            <select id="edit-account-subject" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="">選択しない</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">補助科目</label>
+                            <select id="edit-sub-account" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="">選択しない</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">消費税区分 <span class="text-red-500">*</span></label>
+                            <select id="edit-tax-type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
+                                <option value="taxable-10">課税10%</option>
+                                <option value="taxable-8">軽減税率8%</option>
+                                <option value="non-taxable">非課税</option>
+                                <option value="tax-exempt">免税</option>
+                                <option value="out-of-scope">不課税</option>
+                            </select>
+                        </div>
+
+                        <div class="flex gap-3 pt-4">
+                            <button type="submit" class="flex-1 bg-indigo-500 text-white font-bold py-3 rounded-lg hover:bg-indigo-600 transition">
+                                <i class="fas fa-save mr-2"></i>保存
+                            </button>
+                            <button type="button" id="cancel-edit-btn" class="px-6 bg-gray-300 text-gray-700 font-medium py-3 rounded-lg hover:bg-gray-400 transition">
+                                キャンセル
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- メンバー追加モーダル -->
+        <div id="add-member-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-user-plus text-indigo-500 mr-2"></i>メンバーを追加
+                    </h3>
+                    <button onclick="closeAddMemberModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <form id="add-member-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">ニックネーム</label>
+                        <input type="text" id="member-nickname" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="例：田中さん">
+                        <p class="text-xs text-gray-500 mt-1">メンバーの識別に使用します</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">メールアドレス</label>
+                        <input type="email" id="member-email" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent" placeholder="example@domain.com">
+                        <p class="text-xs text-gray-500 mt-1">招待メールが送信されます</p>
+                    </div>
+
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p class="text-sm text-yellow-800">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            メンバーは追加後、招待メールから参加できます。
+                        </p>
+                    </div>
+
+                    <div class="flex gap-3 pt-4">
+                        <button type="button" onclick="closeAddMemberModal()" class="flex-1 bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                            キャンセル
+                        </button>
+                        <button type="submit" class="flex-1 btn-primary text-white px-4 py-2 rounded-lg hover:shadow-lg transition">
+                            <i class="fas fa-plus mr-2"></i>追加
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="hidden fixed bottom-4 right-4 bg-gray-800 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+            <span id="toast-message"></span>
+        </div>
+
+        <!-- お知らせモーダル -->
+        <div id="announcements-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg shadow-xl p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-2xl font-bold text-gray-800">
+                        <i class="fas fa-bullhorn text-indigo-500 mr-2"></i>運営からのお知らせ
+                    </h3>
+                    <button onclick="closeAnnouncementsModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-2xl"></i>
+                    </button>
+                </div>
+
+                <div id="announcements-list" class="space-y-4">
+                    <!-- お知らせ一覧がここに表示されます -->
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
+                        <p>読み込み中...</p>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-4 border-t flex justify-between">
+                    <button onclick="markAllAsRead()" class="text-indigo-600 hover:text-indigo-700 text-sm">
+                        <i class="fas fa-check-double mr-1"></i>すべて既読にする
+                    </button>
+                    <button onclick="closeAnnouncementsModal()" class="bg-gray-300 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-400">
+                        閉じる
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-gray-100 border-t border-gray-200 mt-12 py-6">
+            <div class="container mx-auto px-4">
+                <div class="flex flex-wrap justify-between items-center">
+                    <div class="text-gray-600 text-sm mb-2 md:mb-0">
+                        © 2025 株式会社FESPO All Rights Reserved.
+                    </div>
+                    <div class="flex flex-wrap gap-4 text-sm">
+                        <a href="/legal.html" class="text-indigo-600 hover:text-indigo-800 transition">
+                            <i class="fas fa-gavel mr-1"></i>法的情報
+                        </a>
+                        <a href="/terms.html" class="text-indigo-600 hover:text-indigo-800 transition">
+                            <i class="fas fa-file-contract mr-1"></i>利用規約
+                        </a>
+                        <a href="/privacy.html" class="text-indigo-600 hover:text-indigo-800 transition">
+                            <i class="fas fa-shield-alt mr-1"></i>プライバシーポリシー
+                        </a>
+                        <a href="/tokushoho.html" class="text-indigo-600 hover:text-indigo-800 transition">
+                            <i class="fas fa-info-circle mr-1"></i>特定商取引法
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.0/dist/jspdf.plugin.autotable.min.js"></script>
+        <script src="/static/api-client.js?v=1765558784374"></script>
+        <script src="/static/app.js?v=1765558784374"></script>
+        <script src="/static/billing-manager.js?v=1765558784374"></script>
+        
+        <!-- Service Worker Registration -->
+        <script>
+            if ('serviceWorker' in navigator) {
+                window.addEventListener('load', () => {
+                    navigator.serviceWorker.register('/sw.js')
+                        .then(registration => {
+                            console.log('[PWA] Service Worker registered:', registration);
+                            
+                            // インストール可能イベント
+                            window.addEventListener('beforeinstallprompt', (e) => {
+                                e.preventDefault();
+                                window.deferredPrompt = e;
+                                console.log('[PWA] App can be installed');
+                            });
+                        })
+                        .catch(error => {
+                            console.error('[PWA] Service Worker registration failed:', error);
+                        });
+                });
+            }
+        </script>
+    </body>
+    </html>
+  

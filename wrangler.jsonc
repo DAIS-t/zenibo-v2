@@ -1,0 +1,14 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "zenibo-v2",
+  "compatibility_date": "2025-12-15",
+  "pages_build_output_dir": "./dist",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "zenibo-v2-production",
+      "database_id": "YOUR_DATABASE_ID_HERE"
+    }
+  ]
+}
