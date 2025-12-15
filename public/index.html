@@ -1560,16 +1560,19 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.0/dist/jspdf.plugin.autotable.min.js"></script>
-        <script src="/static/api-client.js?v=20251215-1"></script>
-        <script src="/static/app.js?v=20251215-1"></script>
-        <script src="/static/billing-manager.js?v=20251215-1"></script>
+        <script src="/static/api-client.js?v=20251215-2"></script>
+        <script src="/static/app.js?v=20251215-2"></script>
+        <script src="/static/billing-manager.js?v=20251215-2"></script>
 
         
         <!-- Service Worker Registration -->
         <script>
+          // Service Worker disabled - sw.js not implemented yet
+          /*
             if ('serviceWorker' in navigator) {
                 window.addEventListener('load', () => {
                     navigator.serviceWorker.register('/sw.js')
+                        */
                         .then(registration => {
                             console.log('[PWA] Service Worker registered:', registration);
                             
