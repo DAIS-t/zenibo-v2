@@ -1560,9 +1560,21 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.0/dist/jspdf.plugin.autotable.min.js"></script>
-        <script src="/static/api-client.js?v=20251215-2"></script>
-        <script src="/static/app.js?v=20251215-2"></script>
-        <script src="/static/billing-manager.js?v=20251215-2"></script>
+       <script>
+  // Force cache busting with timestamp
+  const timestamp = '20251215-3';
+  const scripts = [
+    '/static/app.js',
+    '/static/billing-manager.js',
+    '/static/api-client.js'
+  ];
+  
+  scripts.forEach(src => {
+    const script = document.createElement('script');
+    script.src = src + '?v=' + timestamp;
+    document.body.appendChild(script);
+  });
+</script>
 
         
         <!-- Service Worker Registration -->

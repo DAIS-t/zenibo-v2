@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "zenibo-app",
+  "name": "zenibo-final",
   "compatibility_date": "2025-12-15",
   "pages_build_output_dir": "./dist",
   "compatibility_flags": ["nodejs_compat"],
