@@ -3853,28 +3853,6 @@ async function addNewRecipient() {
         window.app.showToast('連絡先の追加に失敗しました', 'error');
     }
 }
-    
-    const email = prompt('メールアドレスを入力してください:');
-    if (!email || email.trim() === '') return;
-    
-    // メールアドレスの簡易バリデーション
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-        window.app.showToast('正しいメールアドレスを入力してください', 'error');
-        return;
-    }
-    
-    try {
-        await window.apiClient.createRecipient(name.trim(), email.trim());
-        window.app.showToast('連絡先を追加しました', 'success');
-        
-        // モーダルを再読み込み
-        openRecipientsModal();
-    } catch (error) {
-        console.error('Failed to create recipient:', error);
-        window.app.showToast('連絡先の追加に失敗しました', 'error');
-    }
-}
 
 // 連絡先を編集
 async function editRecipient(recipientId) {

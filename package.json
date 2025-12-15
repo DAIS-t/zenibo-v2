@@ -6,7 +6,7 @@
     "vite-build": "vite build",
     "build": "powershell -ExecutionPolicy Bypass -File ./build.ps1",
     "preview": "wrangler pages dev dist",
-    "deploy": "npm run build && wrangler pages deploy dist --project-name zenibo-v2",
+    "deploy": "npm run build && wrangler pages deploy dist --project-name zenibo-app",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "db:migrate:local": "wrangler d1 migrations apply zenibo-v2-production --local",
     "db:migrate:prod": "wrangler d1 migrations apply zenibo-v2-production --remote",

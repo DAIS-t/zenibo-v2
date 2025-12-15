@@ -21,7 +21,7 @@
         <link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
         <link rel="icon" type="image/png" sizes="512x512" href="/static/icon-512.png">
         
-        <script src="https://cdn.tailwindcss.com/3.4.1"></script>
+        <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/style.css" rel="stylesheet">
     </head>
@@ -1560,10 +1560,9 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.0/dist/jspdf.plugin.autotable.min.js"></script>
-        <script src="/static/api-client.js?v=20251215-1"></script>
-        <script src="/static/app.js?v=20251215-1"></script>
-        <script src="/static/billing-manager.js?v=20251215-1"></script>
-
+        <script src="/static/api-client.js?v=1765558784374"></script>
+        <script src="/static/app.js?v=1765558784374"></script>
+        <script src="/static/billing-manager.js?v=1765558784374"></script>
         
         <!-- Service Worker Registration -->
         <script>
