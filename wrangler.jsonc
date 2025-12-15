@@ -8,7 +8,7 @@
     {
       "binding": "DB",
       "database_name": "zenibo-v2-production",
-      "database_id": "YOUR_DATABASE_ID_HERE"
+      "database_id": "58e43a21-0ea2-485a-b86a-43edb59aaa2f"
     }
   ]
 }
